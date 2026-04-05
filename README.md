@@ -459,8 +459,8 @@ The output has three columns: statistic name, hap1 value, hap2 value.
 
 | Metric | Hap1 | Hap2 |
 |--------|------|------|
-| No. of contigs | 16 | 17 |
-| Total contig length | ~11.3 Mbp | ~12.2 Mbp |
+| No. of contigs | 17 | 16 |
+| Total contig length | ~12.2 Mbp | ~11.3 Mbp |
 
 > ⚠️ Your values may differ slightly or be reversed between haplotypes.
 
@@ -486,6 +486,15 @@ expected to be present exactly once in a complete assembly.
 
 **➜ Rename outputs:** `BUSCO hap1` and `BUSCO hap2`
 
+---
+
+#### Expected Quality Summary
+
+| Metric | Hap1 | Hap2 |
+|--------|------|------|
+| No. of contigs | *17* | *16* |
+| Total length | *12160988* | *11304582* |
+| BUSCO completeness (%) | *95.2* | *87.9* |
 > **Note:** BUSCO can be inaccurate for taxonomic groups not well represented in OrthoDB.
 > Merqury (below) provides a complementary reference-free quality assessment.
 
@@ -516,18 +525,6 @@ manner, complementing BUSCO's gene-based approach.
 
 > The **spectra-cn plot** shows the k-mer copy number distribution across both assemblies,
 > helping identify missing, duplicated, or erroneous sequences.
-
----
-
-#### Expected Quality Summary
-
-| Metric | Hap1 | Hap2 |
-|--------|------|------|
-| No. of contigs | *(fill in)* | *(fill in)* |
-| Total length | *(fill in)* | *(fill in)* |
-| BUSCO completeness (%) | *(fill in)* | *(fill in)* |
-| Merqury QV score | *(fill in)* | *(fill in)* |
-| Merqury completeness (%) | *(fill in)* | *(fill in)* |
 
 ---
 
