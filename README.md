@@ -103,22 +103,25 @@ The VGP pipeline is modular, consisting of up to 10 workflows. This tutorial fol
 Input Data
     │
     ▼
-[WF1] K-mer Profiling (Meryl)
+[Step 1] Data Preparation
     │
     ▼
-[WF3/4] Contig Assembly (hifiasm — HiFi-only or Hi-C phased)
+[Step 2] HiFi Reads Preprocessing (Cutadapt)
     │
     ▼
-[WF6] Purging False Duplications (purge_dups)  ← Optional
+[Step 3] Genome Profile Analysis (Meryl + GenomeScope2)
     │
     ▼
-[WF7] Bionano Scaffolding (Bionano Solve)
+[Step 4] Assembly with hifiasm (Hi-C phased)
     │
     ▼
-[WF8] Hi-C Scaffolding (YaHS)
+[Step 5] Bionano Scaffolding (Bionano Solve)
     │
     ▼
-[WF9] Decontamination
+[Step 6] Hi-C Scaffolding (YaHS)
+    │
+    ▼
+[Step 7] Assembly Evaluation (BUSCO + Merqury + gfastats)
     │
     ▼
 Final Chromosome-Level Assembly
