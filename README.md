@@ -189,8 +189,8 @@ All files are publicly available on Zenodo. Upload the following directly into G
 | Dataset | Type | Format | Used In |
 |---------|------|--------|---------|
 | `HiFi_collection` | Dataset Collection (list of 3) | `fasta` | Steps 2, 3, 4, 5 |
-| `Hi-C_dataset_F` | Single dataset | `fastqsanger.gz` | Step 7 (Hi-C scaffolding) |
-| `Hi-C_dataset_R` | Single dataset | `fastqsanger.gz` | Step 7 (Hi-C scaffolding) |
+| `Hi-C_dataset_F` | Single dataset | `fastqsanger.gz` | Step 6 (Hi-C scaffolding) |
+| `Hi-C_dataset_R` | Single dataset | `fastqsanger.gz` | Step 6 (Hi-C scaffolding) |
 
 ---
 
@@ -420,7 +420,7 @@ The GFA outputs from hifiasm must be converted to FASTA format for downstream st
 |-----------|-------|
 | Input file | `Hap1 contigs graph` and `Hap2 contigs graph` |
 | Tool mode | `Summary statistics generation` |
-| Expected genome size | `11747160` *(from GenomeScope2 summary)* |
+| Expected genome size | `367145094` *(from GenomeScope2 summary)* |
 | Thousands separator in output | `No` |
 
 **➜ Rename outputs:** `Hap1 stats` and `Hap2 stats`
@@ -597,7 +597,7 @@ The tool automates scaffolding in five steps:
 | Parameter | Value |
 |-----------|-------|
 | Input file | `Hap1 assembly bionano` |
-| Expected genome size | `11747160` |
+| Expected genome size | `367145094` |
 | Thousands separator in output | `No` |
 
 | Metric | Before Bionano | After Bionano |
