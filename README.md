@@ -144,7 +144,7 @@ Final Chromosome-Level Assembly
 
 **Objective:** Upload and organize all input data in Galaxy.
 
-1. Log into [UseGalaxy.cz](https://usegalaxy.cz/)
+1. Log into [UseGalaxy.org](https://usegalaxy.org/)
 2. Create a new History and name it (e.g., `VGP Assembly`)
 3. Upload FASTA datasets from Zenodo:
    - Use **Upload Data > Paste/Fetch Data**
