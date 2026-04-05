@@ -17,7 +17,7 @@ De novo vertebrate genome assembly using PacBio HiFi, Bionano optical maps, and 
   - [Step 2: HiFi Reads Preprocessing](#step-2-hifi-reads-preprocessing)
   - [Step 3: Genome Profile Analysis](#step-3-genome-profile-analysis)
   - [Step 4: Assembly with hifiasm](#step-4-assembly-with-hifiasm)
-  - [Step 5: Scaffolding with Bionano](#step-5-scaffolding-with-bionano)
+  - [Step 5: Scaffolding with Bionano Optical Maps](#step-5-scaffolding-with-bionano-optical-maps)
   - [Step 6: Hi-C Scaffolding](#step-6-hi-c-scaffolding)
   - [Step 7: Assembly Evaluation](#step-7-assembly-evaluation)
 - [Tools Used](#tools-used)
