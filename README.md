@@ -425,17 +425,6 @@ The GFA outputs from hifiasm must be converted to FASTA format for downstream st
 
 **➜ Rename outputs:** `Hap1 stats` and `Hap2 stats`
 
-**Key statistics reported by gfastats:**
-
-| Statistic | Description |
-|-----------|-------------|
-| No. of contigs | Total number of contigs in the assembly |
-| Largest contig | Length of the largest contig |
-| Total length | Total number of bases in the assembly |
-| Nx | Largest contig length L where contigs ≥ L account for x% of assembly |
-| NGx | Contig length accounting for x% of the reference genome length |
-| GC content | Percentage of guanine + cytosine bases |
-
 ---
 
 #### 4e. Joining and Filtering Stats
