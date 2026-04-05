@@ -342,40 +342,196 @@ repeat content.
 
 ### Step 4: Assembly with hifiasm
 
-**Tool:** `hifiasm`  
-**Objective:** Assemble contigs from HiFi reads (with optional Hi-C phasing).
+**Objective:** Assemble HiFi reads into phased contigs using hifiasm, then evaluate
+assembly quality using gfastats, BUSCO, and Merqury.
 
-#### Assembly Modes
+Hifiasm is a fast open-source *de novo* assembler specifically developed for PacBio HiFi
+reads. A key advantage is its ability to resolve near-identical sequences such as repeats
+and segmental duplications. Hifiasm outputs **GFA files** (Graphical Fragment Assembly),
+which represent the assembly graph including sequences, nodes, and edges (overlaps),
+preserving more information than plain FASTA files.
+
+---
+
+#### 4a. Hifiasm Assembly Modes
+
+Depending on available data, hifiasm can be run in three modes:
 
 | Mode | Input | Output |
 |------|-------|--------|
-| HiFi-only | HiFi reads | Primary + Alternate assembly |
-| Hi-C phased | HiFi + Hi-C reads | Hap1 + Hap2 assemblies |
-| Pseudohaplotype | HiFi reads | Primary + Alternate (with purging) |
+| **Solo** | HiFi reads only | Primary + alternate assembly (pseudohaplotype) |
+| **Hi-C phased** | HiFi + Hi-C reads | Hap1 + Hap2 phased assemblies |
+| **Trio** | HiFi (child) + Illumina (both parents) | Maternal + paternal assemblies |
 
-#### Recommended Settings (Hi-C phased mode)
+> This tutorial uses **Hi-C phased mode**, as we have both HiFi and Hi-C data.
+
+---
+
+#### 4b. Hi-C Phased Assembly with Hifiasm
+
+**Tool:** `Hifiasm` (Galaxy version `0.19.8+galaxy0`)
 
 | Parameter | Value |
 |-----------|-------|
-| Input HiFi reads | Preprocessed `.fastq.gz` |
-| Hi-C R1 reads | Hi-C forward reads |
-| Hi-C R2 reads | Hi-C reverse reads |
-| Assembly mode | Hi-C phased |
+| Assembly mode | `Standard` |
+| Input reads | `HiFi_collection (trimmed)` *(output of Cutadapt)* |
+| Options for Hi-C partition | `Specify` |
+| Hi-C R1 reads | `Hi-C_dataset_F` |
+| Hi-C R2 reads | `Hi-C_dataset_R` |
 
-**Outputs (GFA format → converted to FASTA):**
-- `hap1.p_ctg.fa` — Haplotype 1 contigs
-- `hap2.p_ctg.fa` — Haplotype 2 contigs
+**➜ Rename outputs:**
 
-#### Assembly QC
+| Original Output | Renamed To | Tag |
+|----------------|-----------|-----|
+| Hi-C hap1 balanced contig graph | `Hap1 contigs graph` | `#hap1` |
+| Hi-C hap2 balanced contig graph | `Hap2 contigs graph` | `#hap2` |
 
-**Tool:** `Merqury`  
-Evaluates assembly completeness and accuracy using k-mers.
+---
 
-**Tool:** `BUSCO`  
-Checks completeness against conserved single-copy orthologs.
+#### 4c. Convert GFA to FASTA with gfastats
 
-**Tool:** `gfastats`  
-Reports assembly statistics (N50, L50, contig count, total size).
+**Tool:** `gfastats` (Galaxy version `1.3.6+galaxy0`)
+
+The GFA outputs from hifiasm must be converted to FASTA format for downstream steps.
+`gfastats` is a VGP-developed tool suite for manipulation and evaluation of FASTA/GFA files.
+
+| Parameter | Value |
+|-----------|-------|
+| Input GFA file | `Hap1 contigs graph` and `Hap2 contigs graph` |
+| Tool mode | `FASTA conversion` |
+
+**➜ Rename outputs:** `Hap1 contigs FASTA` and `Hap2 contigs FASTA`
+
+---
+
+#### 4d. Assembly Statistics with gfastats
+
+**Tool:** `gfastats` (Galaxy version `1.3.6+galaxy0`)
+
+| Parameter | Value |
+|-----------|-------|
+| Input file | `Hap1 contigs graph` and `Hap2 contigs graph` |
+| Tool mode | `Summary statistics generation` |
+| Expected genome size | `11747160` *(from GenomeScope2 summary)* |
+| Thousands separator in output | `No` |
+
+**➜ Rename outputs:** `Hap1 stats` and `Hap2 stats`
+
+**Key statistics reported by gfastats:**
+
+| Statistic | Description |
+|-----------|-------------|
+| No. of contigs | Total number of contigs in the assembly |
+| Largest contig | Length of the largest contig |
+| Total length | Total number of bases in the assembly |
+| Nx | Largest contig length L where contigs ≥ L account for x% of assembly |
+| NGx | Contig length accounting for x% of the reference genome length |
+| GC content | Percentage of guanine + cytosine bases |
+
+---
+
+#### 4e. Joining and Filtering Stats
+
+**Step 1 — Join hap1 and hap2 statistics:**
+
+**Tool:** `Column join` (Galaxy version `0.0.3`)
+
+| Parameter | Value |
+|-----------|-------|
+| Input files | `Hap1 stats` and `Hap2 stats` |
+| All other settings | Default |
+
+**➜ Rename output:** `gfastats on hap1 and hap2 (full)`
+
+**Step 2 — Remove scaffold lines (no scaffolds exist at this stage):**
+
+**Tool:** `Search in textfiles` (Galaxy version `1.1.1`)
+
+| Parameter | Value |
+|-----------|-------|
+| Input file | `gfastats on hap1 and hap2 (full)` |
+| That | `Don't Match` |
+| Type of regex | `Basic` |
+| Regular Expression | `scaffold` |
+| Match type | `case insensitive` |
+
+**➜ Rename output:** `gfastats on hap1 and hap2 contigs`
+
+The output has three columns: statistic name, hap1 value, hap2 value.
+
+**Expected results:**
+
+| Metric | Hap1 | Hap2 |
+|--------|------|------|
+| No. of contigs | 16 | 17 |
+| Total contig length | ~11.3 Mbp | ~12.2 Mbp |
+
+> ⚠️ Your values may differ slightly or be reversed between haplotypes.
+
+---
+
+#### 4f. Assembly Completeness with BUSCO
+
+**Tool:** `BUSCO` (Galaxy version `5.5.0+galaxy0`)
+
+BUSCO provides a qualitative assessment of assembly completeness by checking for genes
+expected to be present exactly once in a complete assembly.
+
+| Parameter | Value |
+|-----------|-------|
+| Sequences to analyze | `Hap1 contigs FASTA` and `Hap2 contigs FASTA` |
+| Lineage data source | `Use cached lineage data` |
+| Cached database with lineage | `Busco v5 Lineage Datasets` |
+| Mode | `Genome assemblies (DNA)` |
+| Use Augustus instead of Metaeuk | `Use Metaeuk` |
+| Auto-detect or select lineage? | `Select lineage` |
+| Lineage | `Saccharomycetes` |
+| Outputs to generate | `short summary text` and `summary image` |
+
+**➜ Rename outputs:** `BUSCO hap1` and `BUSCO hap2`
+
+> **Note:** BUSCO can be inaccurate for taxonomic groups not well represented in OrthoDB.
+> Merqury (below) provides a complementary reference-free quality assessment.
+
+---
+
+#### 4g. Reference-Free Quality Assessment with Merqury
+
+**Tool:** `Merqury` (Galaxy version `1.3+galaxy3`)
+
+Merqury assesses assembly quality via k-mer copy number analysis in a reference-free
+manner, complementing BUSCO's gene-based approach.
+
+| Parameter | Value |
+|-----------|-------|
+| Evaluation mode | `Default mode` |
+| k-mer counts database | `Merged meryldb` |
+| Number of assemblies | `Two assemblies` |
+| First genome assembly | `Hap1 contigs FASTA` |
+| Second genome assembly | `Hap2 contigs FASTA` |
+
+**Merqury outputs:**
+
+| Output | Description |
+|--------|-------------|
+| Stats collection | Completeness statistics |
+| QV stats collection | Consensus accuracy quality value (Phred-scaled) |
+| Plots collection | Assembly CN spectrum plot (`spectra-cn.ln`) |
+
+> The **spectra-cn plot** shows the k-mer copy number distribution across both assemblies,
+> helping identify missing, duplicated, or erroneous sequences.
+
+---
+
+#### Expected Quality Summary
+
+| Metric | Hap1 | Hap2 |
+|--------|------|------|
+| No. of contigs | *(fill in)* | *(fill in)* |
+| Total length | *(fill in)* | *(fill in)* |
+| BUSCO completeness (%) | *(fill in)* | *(fill in)* |
+| Merqury QV score | *(fill in)* | *(fill in)* |
+| Merqury completeness (%) | *(fill in)* | *(fill in)* |
 
 ---
 
