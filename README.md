@@ -340,8 +340,12 @@ repeat content.
 | Transformed linear plot | Frequency × coverage vs. coverage (amplifies higher-order peaks) |
 | Transformed log plot | Log-scale version of the transformed plot |
 
-Model: this file includes a detailed report about the model fitting.
-Summary: Includes inferred genome properties (haploid length, heterozygosity %). These estimates are based on the GenomeScope2 model (black line). Good model fit to the data (blue bars) means the estimates are reliable. In this tutorial, the fit is good.
+**Text files:**
+
+- **Model** — Detailed report about the model fitting parameters.
+- **Summary** — Includes inferred genome properties (haploid length, heterozygosity %).
+  Estimates are based on the GenomeScope2 model (black line). Good model fit to the
+  data (blue bars) means the estimates are reliable. In this tutorial, the fit is good.
 ---
 
 ### Step 4: Assembly with hifiasm
