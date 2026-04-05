@@ -766,14 +766,7 @@ Same parameters as above, except:
 
 #### 6i. Comparing Contact Maps
 
-Compare the pre- and post-scaffolding contact maps to assess improvement:
-
-| Feature | Before YaHS | After YaHS |
-|---------|------------|-----------|
-| Contact map image | *(insert PretextSnapshot)* | *(insert PretextSnapshot)* |
-| No. of scaffolds | *(fill in)* | *(fill in)* |
-| Largest scaffold | *(fill in)* | *(fill in)* |
-| N50 | *(fill in)* | *(fill in)* |
+Compare the pre- and post-scaffolding contact maps to assess improvement
 
 > **What to look for:** The post-YaHS contact map should show clear diagonal blocks
 > representing chromosomes, with strong intra-chromosomal signal and minimal
