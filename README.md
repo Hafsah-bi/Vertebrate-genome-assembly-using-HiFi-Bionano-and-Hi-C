@@ -784,7 +784,6 @@ Compare the pre- and post-scaffolding contact maps to assess improvement
 | `BUSCO` | Gene space completeness (%) |
 | `Merqury` | k-mer completeness, QV score |
 | `PretextMap` | Hi-C contact map visualization |
-| `BlobTools` | Contamination screening |
 
 #### Key Quality Metrics
 
@@ -794,6 +793,25 @@ Compare the pre- and post-scaffolding contact maps to assess improvement
 | BUSCO completeness | % conserved genes found intact | > 95% |
 | QV (Quality Value) | Phred-scaled error rate estimate | > Q40 |
 | k-mer completeness | % of k-mers from reads found in assembly | > 95% |
+
+#### Final Assembly Statistics
+
+The table below compares the final assembly against the reference genome:
+
+| Statistics | Final Assembly | Reference Genome |
+|------------|---------------|-----------------|
+| Total sequence length (bp) | 12,160,988 | 12,157,105 |
+| Scaffold count | 17 | 17 |
+| N50 (bp) | 922,43 | 924,43 |
+| N75 (bp) | 667,18 | 666,82 |
+| GC percentage | 38.18 | 38 |
+| L50 (bp) | 6 | 6 |
+
+The total sequence length of our genome assembly is almost identical to the reference
+genome. The scaffold count of 17 matches the reference assembly, which consists of 16
+chromosomes plus mitochondrial DNA (~85,779 bp). All remaining statistics show very
+similar values between the final assembly and the reference, indicating a high-quality
+chromosome-level assembly.
 
 ---
 
