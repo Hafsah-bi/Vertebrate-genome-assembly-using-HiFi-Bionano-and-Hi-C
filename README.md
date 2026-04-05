@@ -616,35 +616,183 @@ The tool automates scaffolding in five steps:
 
 ### Step 6: Hi-C Scaffolding
 
-**Tool:** `YaHS`  
-**Objective:** Use Hi-C chromatin contact data to order and orient scaffolds into chromosome-level assemblies.
+**Objective:** Use Hi-C chromatin contact data to scaffold Bionano assemblies to
+chromosome scale.
 
-#### Pre-processing Hi-C Data
+Hi-C measures contact frequency between genomic loci, which correlates with their
+linear distance. This allows ordering and orienting scaffolds into chromosome-level
+assemblies. Hi-C reads are mapped **individually** (not as pairs) because insert sizes
+in Hi-C can range from 1 bp to hundreds of megabases, violating paired-end distance
+assumptions of most aligners.
 
-1. **Trim adapters** using `Trim Galore`
-2. **Map reads** to assembly using `BWA-MEM2`:
-   - Map R1 and R2 independently
-   - Filter for high-quality alignments
-3. **Filter and sort** BAM files
-4. **Mark duplicates** using `Picard MarkDuplicates`
+---
 
-#### YaHS Scaffolding
+#### 6a. Map Forward Hi-C Reads
+
+**Tool:** `BWA-MEM2` 
 
 | Parameter | Value |
 |-----------|-------|
-| Input assembly | Bionano-scaffolded FASTA |
-| Hi-C BAM | Filtered, deduplicated BAM |
-| Restriction enzyme | Arima (or HindIII/DpnII) |
+| Reference genome source | `Use a genome from history and build index` |
+| Reference sequence | `Hap1 assembly bionano` |
+| Single or Paired-end reads | `Single` |
+| FASTQ dataset | `Hi-C_dataset_F` |
+| Set read groups information? | `Do not set` |
+| Analysis mode | `1. Simple Illumina mode` |
+| BAM sorting mode | `Sort by read names (QNAME)` |
 
-#### Generate Hi-C Contact Maps
+**➜ Rename output:** `BAM forward`
 
-**Tool:** `PretextMap` → `PretextSnapshot`  
-Visualize genome-wide Hi-C contact maps to assess scaffolding quality.
+---
 
-**Good scaffolding signs:**
-- Clear diagonal blocks (chromosomes)
-- Strong intra-chromosomal signal
-- Minimal off-diagonal noise
+#### 6b. Map Reverse Hi-C Reads
+
+**Tool:** `BWA-MEM2` 
+
+Same parameters as 6a, except:
+
+| Parameter | Value |
+|-----------|-------|
+| Reference sequence | `Hap1 assembly bionano` |
+| FASTQ dataset | `Hi-C_dataset_R` |
+
+**➜ Rename output:** `BAM reverse`
+
+---
+
+#### 6c. Merge Forward and Reverse Alignments
+
+**Tool:** `Filter and merge chimeric reads from Arima Genomics`
+
+| Parameter | Value |
+|-----------|-------|
+| First set of reads | `BAM forward` |
+| Second set of reads | `BAM reverse` |
+
+**➜ Rename output:** `BAM Hi-C reads`
+
+---
+
+#### 6d. Generate Initial Hi-C Contact Map
+
+Generate a pre-scaffolding contact map as a baseline for comparison.
+
+**Tool:** `PretextMap` 
+
+| Parameter | Value |
+|-----------|-------|
+| Input BAM | `BAM Hi-C reads` |
+| Sort by | `Don't sort` |
+
+**➜ Rename output:** `PretextMap output`
+
+**Tool:** `Pretext Snapshot` 
+
+| Parameter | Value |
+|-----------|-------|
+| Input Pretext map file | `PretextMap output` |
+| Output image format | `png` |
+| Show grid? | `Yes` |
+
+---
+
+#### 6e. YaHS Scaffolding
+
+**Tool:** `YaHS` 
+
+YaHS uses Hi-C data to linearly orient and order contigs along chromosomes. Unlike
+most Hi-C scaffolding tools, YaHS does **not** require the estimated chromosome count
+as input.
+
+| Parameter | Value |
+|-----------|-------|
+| Input contig sequences | `Hap1 assembly bionano` |
+| Alignment file of Hi-C reads | `BAM Hi-C reads` |
+| Restriction enzyme | `Enter a specific sequence` |
+| Restriction enzyme sequence(s) | `CTTAAG` |
+
+**➜ Rename output:** `YaHS Scaffolds FASTA`
+
+---
+
+#### 6f. Re-map Hi-C Reads to YaHS Scaffolds
+
+Repeat the mapping process using the YaHS scaffolds as the new reference to generate
+a post-scaffolding contact map.
+
+**Map forward reads — Tool:** `BWA-MEM2` 
+
+| Parameter | Value |
+|-----------|-------|
+| Reference sequence | `YaHS Scaffolds FASTA` |
+| FASTQ dataset | `Hi-C_dataset_F` |
+| Single or Paired-end reads | `Single` |
+| Set read groups information? | `Do not set` |
+| Analysis mode | `1. Simple Illumina mode` |
+| BAM sorting mode | `Sort by read names (QNAME)` |
+
+**➜ Rename output:** `BAM forward YaHS`
+
+**Map reverse reads — Tool:** `BWA-MEM2` 
+
+Same parameters as above, except:
+
+| Parameter | Value |
+|-----------|-------|
+| FASTQ dataset | `Hi-C_dataset_R` |
+
+**➜ Rename output:** `BAM reverse YaHS`
+
+---
+
+#### 6g. Merge YaHS-Mapped Reads
+
+**Tool:** `Filter and merge chimeric reads from Arima Genomics`
+
+| Parameter | Value |
+|-----------|-------|
+| First set of reads | `BAM forward YaHS` |
+| Second set of reads | `BAM reverse YaHS` |
+
+**➜ Rename output:** `BAM Hi-C reads YaHS`
+
+---
+
+#### 6h. Generate Final Hi-C Contact Map
+
+**Tool:** `PretextMap` 
+
+| Parameter | Value |
+|-----------|-------|
+| Input BAM | `BAM Hi-C reads YaHS` |
+| Sort by | `Don't sort` |
+
+**➜ Rename output:** `PretextMap output YaHS`
+
+**Tool:** `Pretext Snapshot` 
+
+| Parameter | Value |
+|-----------|-------|
+| Input Pretext map file | `PretextMap output YaHS` |
+| Output image format | `png` |
+| Show grid? | `Yes` |
+
+---
+
+#### 6i. Comparing Contact Maps
+
+Compare the pre- and post-scaffolding contact maps to assess improvement:
+
+| Feature | Before YaHS | After YaHS |
+|---------|------------|-----------|
+| Contact map image | *(insert PretextSnapshot)* | *(insert PretextSnapshot)* |
+| No. of scaffolds | *(fill in)* | *(fill in)* |
+| Largest scaffold | *(fill in)* | *(fill in)* |
+| N50 | *(fill in)* | *(fill in)* |
+
+> **What to look for:** The post-YaHS contact map should show clear diagonal blocks
+> representing chromosomes, with strong intra-chromosomal signal and minimal
+> off-diagonal noise.
 
 ---
 
