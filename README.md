@@ -346,6 +346,17 @@ repeat content.
 - **Summary** — Includes inferred genome properties (haploid length, heterozygosity %).
   Estimates are based on the GenomeScope2 model (black line). Good model fit to the
   data (blue bars) means the estimates are reliable. In this tutorial, the fit is good.
+
+| Property | Min | Max |
+|----------|-----|-----|
+| Homozygous (aa) | 95.0343% | 98.9802% |
+| Heterozygous (ab) | 1.01979% | 4.96571% |
+| Genome Haploid Length | 323,368,094 bp | 424,630,869 bp |
+| Genome Repeat Length | 318,764,165 bp | 418,585,220 bp |
+| Genome Unique Length | 4,603,929 bp | 6,045,650 bp |
+| Model Fit | 2.54666% | 83.8404% |
+| Read Error Rate | 0.753382% | 0.753382% |
+
 ---
 
 ### Step 4: Assembly with hifiasm
@@ -852,34 +863,6 @@ chromosome-level assembly.
 | **K-mer** | A nucleotide subsequence of length k |
 | **BUSCO** | Benchmarking Universal Single-Copy Orthologs — a gene completeness metric |
 | **T2T** | Telomere-to-Telomere — a complete, gap-free chromosome assembly |
-
----
-
-## Results
-
-### Genome Profile (GenomeScope2)
-
-| Property | Min | Max |
-|----------|-----|-----|
-| Homozygous (aa) | 95.0343% | 98.9802% |
-| Heterozygous (ab) | 1.01979% | 4.96571% |
-| Genome Haploid Length | 323,368,094 bp | 424,630,869 bp |
-| Genome Repeat Length | 318,764,165 bp | 418,585,220 bp |
-| Genome Unique Length | 4,603,929 bp | 6,045,650 bp |
-| Model Fit | 2.54666% | 83.8404% |
-| Read Error Rate | 0.753382% | 0.753382% |
-
-### Assembly Statistics
-
-| Stage | Contigs/Scaffolds | N50 | Total Size | BUSCO (%) |
-|-------|------------------|-----|-----------|-----------|
-| hifiasm (raw) | | | | |
-| After Bionano scaffolding | | | | |
-| After Hi-C scaffolding | | | | |
-
-### Hi-C Contact Map
-
-> *(Insert PretextSnapshot image here)*
 
 ---
 
