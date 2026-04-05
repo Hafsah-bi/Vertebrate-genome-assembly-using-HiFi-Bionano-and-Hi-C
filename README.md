@@ -22,7 +22,6 @@ De novo vertebrate genome assembly using PacBio HiFi, Bionano optical maps, and 
   - [Step 7: Assembly Evaluation](#step-7-assembly-evaluation)
 - [Tools Used](#tools-used)
 - [Key Terminology](#key-terminology)
-- [Results](#results)
 - [References](#references)
 - [Acknowledgements](#acknowledgements)
 
