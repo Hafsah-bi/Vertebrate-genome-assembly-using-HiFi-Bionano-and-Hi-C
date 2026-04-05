@@ -17,9 +17,9 @@ De novo vertebrate genome assembly using PacBio HiFi, Bionano optical maps, and 
   - [Step 2: HiFi Reads Preprocessing](#step-2-hifi-reads-preprocessing)
   - [Step 3: Genome Profile Analysis](#step-3-genome-profile-analysis)
   - [Step 4: Assembly with hifiasm](#step-4-assembly-with-hifiasm)
-  - [Step 5: Scaffolding with Bionano](#step-6-scaffolding-with-bionano)
-  - [Step 6: Hi-C Scaffolding](#step-7-hi-c-scaffolding)
-  - [Step 7: Assembly Evaluation](#step-8-assembly-evaluation)
+  - [Step 5: Scaffolding with Bionano](#step-5-scaffolding-with-bionano)
+  - [Step 6: Hi-C Scaffolding](#step-6-hi-c-scaffolding)
+  - [Step 7: Assembly Evaluation](#step-7-assembly-evaluation)
 - [Tools Used](#tools-used)
 - [Key Terminology](#key-terminology)
 - [Results](#results)
@@ -368,7 +368,7 @@ Depending on available data, hifiasm can be run in three modes:
 
 #### 4b. Hi-C Phased Assembly with Hifiasm
 
-**Tool:** `Hifiasm` (Galaxy version `0.19.8+galaxy0`)
+**Tool:** `Hifiasm` 
 
 | Parameter | Value |
 |-----------|-------|
@@ -389,7 +389,7 @@ Depending on available data, hifiasm can be run in three modes:
 
 #### 4c. Convert GFA to FASTA with gfastats
 
-**Tool:** `gfastats` (Galaxy version `1.3.6+galaxy0`)
+**Tool:** `gfastats` 
 
 The GFA outputs from hifiasm must be converted to FASTA format for downstream steps.
 `gfastats` is a VGP-developed tool suite for manipulation and evaluation of FASTA/GFA files.
@@ -405,7 +405,7 @@ The GFA outputs from hifiasm must be converted to FASTA format for downstream st
 
 #### 4d. Assembly Statistics with gfastats
 
-**Tool:** `gfastats` (Galaxy version `1.3.6+galaxy0`)
+**Tool:** `gfastats` 
 
 | Parameter | Value |
 |-----------|-------|
@@ -433,7 +433,7 @@ The GFA outputs from hifiasm must be converted to FASTA format for downstream st
 
 **Step 1 — Join hap1 and hap2 statistics:**
 
-**Tool:** `Column join` (Galaxy version `0.0.3`)
+**Tool:** `Column join` 
 
 | Parameter | Value |
 |-----------|-------|
@@ -444,8 +444,7 @@ The GFA outputs from hifiasm must be converted to FASTA format for downstream st
 
 **Step 2 — Remove scaffold lines (no scaffolds exist at this stage):**
 
-**Tool:** `Search in textfiles` (Galaxy version `1.1.1`)
-
+**Tool:** `Search in textfiles` 
 | Parameter | Value |
 |-----------|-------|
 | Input file | `gfastats on hap1 and hap2 (full)` |
@@ -471,7 +470,7 @@ The output has three columns: statistic name, hap1 value, hap2 value.
 
 #### 4f. Assembly Completeness with BUSCO
 
-**Tool:** `BUSCO` (Galaxy version `5.5.0+galaxy0`)
+**Tool:** `BUSCO` 
 
 BUSCO provides a qualitative assessment of assembly completeness by checking for genes
 expected to be present exactly once in a complete assembly.
@@ -496,7 +495,7 @@ expected to be present exactly once in a complete assembly.
 
 #### 4g. Reference-Free Quality Assessment with Merqury
 
-**Tool:** `Merqury` (Galaxy version `1.3+galaxy3`)
+**Tool:** `Merqury` 
 
 Merqury assesses assembly quality via k-mer copy number analysis in a reference-free
 manner, complementing BUSCO's gene-based approach.
@@ -534,26 +533,85 @@ manner, complementing BUSCO's gene-based approach.
 
 ---
 
-### Step 5: Scaffolding with Bionano
+### Step 5: Scaffolding with Bionano Optical Maps
 
-**Tool:** `Bionano Solve`  
-**Objective:** Use optical maps to scaffold contigs into larger sequences.
+**Objective:** Use Bionano optical maps to orient, order, and join contigs into scaffolds.
 
-**How it works:** Bionano optical maps provide long-range physical distance information (~1 Mb) by labeling specific enzyme recognition sites in high-molecular-weight DNA.
+Contigs from hifiasm are assembled into **scaffolds** — contigs interspaced with gaps —
+using two technologies: **Bionano optical maps** (this step) and **Hi-C** (Step 7).
+
+> **Note:** Scaffolding is performed on **Hap1** from Hi-C phased hifiasm. The alternate
+> assembly is not scaffolded as it is incomplete.
+
+---
+
+#### 5a. Upload Bionano Dataset
+
+| File | URL | Datatype |
+|------|-----|----------|
+| bionano.cmap | https://zenodo.org/records/5887339/files/bionano.cmap | `cmap` |
+
+1. Go to **Upload Data → Paste/Fetch Data**, paste the URL, set datatype to `cmap`
+2. Click **Start**, then **Close**
+
+**➜ Rename dataset:** `Bionano_dataset`
+
+---
+
+#### 5b. Bionano Hybrid Scaffolding
+
+**Tool:** `Bionano Hybrid Scaffold` 
+
+The tool automates scaffolding in five steps:
+1. Generate *in silico* maps from the sequence assembly
+2. Align maps against Bionano genome maps and resolve conflicts
+3. Merge non-conflicting maps into hybrid scaffolds
+4. Align sequence maps back to hybrid scaffolds
+5. Generate AGP and FASTA output files
 
 | Parameter | Value |
 |-----------|-------|
-| Assembly FASTA | Purged primary assembly |
-| Bionano CMAP | Optical map file |
-| Enzyme | DLE-1 (or appropriate enzyme) |
+| NGS FASTA | `Hap1 contigs FASTA` |
+| BioNano CMAP | `Bionano_dataset` |
+| Configuration mode | `VGP mode` |
+| Genome maps conflict filter | `Cut contig at conflict` |
+| Sequences conflict filter | `Cut contig at conflict` |
 
-**Outputs:**
-- Hybrid scaffolds (FASTA)
-- Scaffolding statistics
-- Conflict reports
+---
 
-**QC:** Compare N50, scaffold count, and total size before and after Bionano scaffolding.
+#### 5c. Concatenate Scaffolded and Unscaffolded Contigs
 
+**Tool:** `Concatenate datasets`
+
+| Parameter | Value |
+|-----------|-------|
+| Concatenate Dataset | `NGScontigs scaffold NCBI trimmed` |
+| Insert Dataset → Select | `NGScontigs not scaffolded trimmed` |
+
+**➜ Rename output:** `Hap1 assembly bionano`
+
+---
+
+#### 5d. Evaluate Bionano Assembly with gfastats
+
+**Tool:** `gfastats` 
+
+| Parameter | Value |
+|-----------|-------|
+| Input file | `Hap1 assembly bionano` |
+| Expected genome size | `11747160` |
+| Thousands separator in output | `No` |
+
+| Metric | Before Bionano | After Bionano |
+|--------|---------------|--------------|
+| No. of sequences | *(fill in)* | *(fill in)* |
+| Largest sequence | *(fill in)* | *(fill in)* |
+| Total length | *(fill in)* | *(fill in)* |
+| N50 | *(fill in)* | *(fill in)* |
+| GC content (%) | *(fill in)* | *(fill in)* |
+
+> **What to look for:** N50 should increase and sequence count should decrease,
+> indicating improved contiguity.
 ---
 
 ### Step 6: Hi-C Scaffolding
