@@ -538,7 +538,7 @@ manner, complementing BUSCO's gene-based approach.
 **Objective:** Use Bionano optical maps to orient, order, and join contigs into scaffolds.
 
 Contigs from hifiasm are assembled into **scaffolds** — contigs interspaced with gaps —
-using two technologies: **Bionano optical maps** (this step) and **Hi-C** (Step 7).
+using two technologies: **Bionano optical maps** (this step) and **Hi-C** (Step 6).
 
 > **Note:** Scaffolding is performed on **Hap1** from Hi-C phased hifiasm. The alternate
 > assembly is not scaffolded as it is incomplete.
