@@ -857,23 +857,23 @@ chromosome-level assembly.
 
 ## Results
 
-> ⚠️ *Fill in this section after completing the tutorial with your actual results.*
-
 ### Genome Profile (GenomeScope2)
 
-| Metric | Value |
-|--------|-------|
-| Estimated genome size | ___ Mb |
-| Heterozygosity | ___% |
-| Repeat content | ___% |
-| Ploidy | ___ |
+| Property | Min | Max |
+|----------|-----|-----|
+| Homozygous (aa) | 95.0343% | 98.9802% |
+| Heterozygous (ab) | 1.01979% | 4.96571% |
+| Genome Haploid Length | 323,368,094 bp | 424,630,869 bp |
+| Genome Repeat Length | 318,764,165 bp | 418,585,220 bp |
+| Genome Unique Length | 4,603,929 bp | 6,045,650 bp |
+| Model Fit | 2.54666% | 83.8404% |
+| Read Error Rate | 0.753382% | 0.753382% |
 
 ### Assembly Statistics
 
 | Stage | Contigs/Scaffolds | N50 | Total Size | BUSCO (%) |
 |-------|------------------|-----|-----------|-----------|
 | hifiasm (raw) | | | | |
-| After purge_dups | | | | |
 | After Bionano scaffolding | | | | |
 | After Hi-C scaffolding | | | | |
 
