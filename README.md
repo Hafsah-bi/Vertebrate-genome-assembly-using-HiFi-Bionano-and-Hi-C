@@ -17,10 +17,9 @@ De novo vertebrate genome assembly using PacBio HiFi, Bionano optical maps, and 
   - [Step 2: HiFi Reads Preprocessing](#step-2-hifi-reads-preprocessing)
   - [Step 3: Genome Profile Analysis](#step-3-genome-profile-analysis)
   - [Step 4: Assembly with hifiasm](#step-4-assembly-with-hifiasm)
-  - [Step 5: Purging False Duplications](#step-5-purging-false-duplications)
-  - [Step 6: Scaffolding with Bionano](#step-6-scaffolding-with-bionano)
-  - [Step 7: Hi-C Scaffolding](#step-7-hi-c-scaffolding)
-  - [Step 8: Assembly Evaluation](#step-8-assembly-evaluation)
+  - [Step 5: Scaffolding with Bionano](#step-6-scaffolding-with-bionano)
+  - [Step 6: Hi-C Scaffolding](#step-7-hi-c-scaffolding)
+  - [Step 7: Assembly Evaluation](#step-8-assembly-evaluation)
 - [Tools Used](#tools-used)
 - [Key Terminology](#key-terminology)
 - [Results](#results)
@@ -535,27 +534,7 @@ manner, complementing BUSCO's gene-based approach.
 
 ---
 
-### Step 5: Purging False Duplications
-
-**Tool:** `purge_dups`  
-**Objective:** Remove haplotypic duplications and overlaps from the primary assembly.
-
-> **When to purge:** Inspect k-mer multiplicity plots from Merqury. If the primary assembly shows a bimodal distribution with a second peak at 2× coverage, purging is recommended.
-
-**Steps:**
-1. Align HiFi reads back to the primary assembly (`minimap2`)
-2. Calculate read depth (`purge_dups: calcuts`)
-3. Split assemblies at coverage gaps (`split_fa`)
-4. Self-align contigs to detect overlaps (`minimap2 -x asm5`)
-5. Purge duplications (`purge_dups`)
-
-**Outputs:**
-- `purged.fa` — Purged primary assembly
-- `hap.fa` — Haplotigs moved to alternate
-
----
-
-### Step 6: Scaffolding with Bionano
+### Step 5: Scaffolding with Bionano
 
 **Tool:** `Bionano Solve`  
 **Objective:** Use optical maps to scaffold contigs into larger sequences.
@@ -577,7 +556,7 @@ manner, complementing BUSCO's gene-based approach.
 
 ---
 
-### Step 7: Hi-C Scaffolding
+### Step 6: Hi-C Scaffolding
 
 **Tool:** `YaHS`  
 **Objective:** Use Hi-C chromatin contact data to order and orient scaffolds into chromosome-level assemblies.
@@ -611,7 +590,7 @@ Visualize genome-wide Hi-C contact maps to assess scaffolding quality.
 
 ---
 
-### Step 8: Assembly Evaluation
+### Step 7: Assembly Evaluation
 
 **Objective:** Comprehensively assess the quality of the final assembly.
 
