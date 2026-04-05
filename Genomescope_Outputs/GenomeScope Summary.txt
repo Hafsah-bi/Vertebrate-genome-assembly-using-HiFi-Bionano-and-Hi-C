@@ -1,0 +1,15 @@
+GenomeScope version 2.0
+input file = /corral4/main/objects/3/7/a/dataset_37aa9d54-0202-40af-b952-26428e2e6bf1.dat
+output directory = .
+p = 2
+k = 31
+TESTING set to TRUE
+
+property                      min               max
+Homozygous (aa)               95.0343%          98.9802%
+Heterozygous (ab)             1.01979%          4.96571%
+Genome Haploid Length         323,368,094 bp    424,630,869 bp
+Genome Repeat Length          318,764,165 bp    418,585,220 bp
+Genome Unique Length          4,603,929 bp      6,045,650 bp
+Model Fit                     2.54666%          83.8404%
+Read Error Rate               0.753382%         0.753382%
