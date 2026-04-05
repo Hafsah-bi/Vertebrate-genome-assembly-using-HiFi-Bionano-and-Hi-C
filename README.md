@@ -142,17 +142,53 @@ Final Chromosome-Level Assembly
 
 ### Step 1: Data Preparation
 
-**Objective:** Upload and organize all input data in Galaxy.
+**Objective:** Upload and organize all input data in Galaxy before running the pipeline.
 
 1. Log into [UseGalaxy.org](https://usegalaxy.org/)
 2. Create a new History and name it (e.g., `VGP Assembly`)
-3. Upload FASTA datasets from Zenodo:
-   - Use **Upload Data > Paste/Fetch Data**
-   - Paste Zenodo URLs for `.fasta` files
-   - Set datatype to `fasta`
-4. Upload FASTQ datasets:
-   - Set datatype to `fastqsanger.gz`
-5. Organize datasets into **Collections** (Dataset Lists) for easier management
+   
+#### Datasets
+
+All files are publicly available on Zenodo. Upload the following directly into Galaxy using **Upload Data → Paste/Fetch Data**:
+
+**HiFi Reads (FASTA)**
+
+| File | Zenodo URL |
+|------|-----------|
+| HiFi_synthetic_50x_01.fasta | https://zenodo.org/record/6098306/files/HiFi_synthetic_50x_01.fasta |
+| HiFi_synthetic_50x_02.fasta | https://zenodo.org/record/6098306/files/HiFi_synthetic_50x_02.fasta |
+| HiFi_synthetic_50x_03.fasta | https://zenodo.org/record/6098306/files/HiFi_synthetic_50x_03.fasta |
+
+> Set datatype to `fasta` for all three files.
+
+**Hi-C Reads (FASTQ)**
+
+| File | Zenodo URL | Rename To | Description |
+|------|-----------|-----------|-------------|
+| SRR7126301_1.fastq.gz | https://zenodo.org/record/5550653/files/SRR7126301_1.fastq.gz | `Hi-C_dataset_F` | Forward reads |
+| SRR7126301_2.fastq.gz | https://zenodo.org/record/5550653/files/SRR7126301_2.fastq.gz | `Hi-C_dataset_R` | Reverse reads |
+
+> Set datatype to `fastqsanger.gz` for both Hi-C files.
+
+#### Organizing Data in Galaxy
+
+1. Upload all five files via **Upload Data → Paste/Fetch Data**, pasting the Zenodo URLs above.
+2. After upload, **rename** the Hi-C files:
+   - `SRR7126301_1.fastq.gz` → `Hi-C_dataset_F` (forward reads)
+   - `SRR7126301_2.fastq.gz` → `Hi-C_dataset_R` (reverse reads)
+3. Create a **Dataset Collection** from the three HiFi FASTA files:
+   - Select all three `HiFi_synthetic_50x_*.fasta` files
+   - Click **For all selected → Build Dataset List**
+   - Name the collection: `HiFi_collection`
+4. The Hi-C files (`Hi-C_dataset_F` and `Hi-C_dataset_R`) remain as individual datasets — they are used separately in the Hi-C scaffolding step.
+
+#### Final Data Organization Summary
+
+| Dataset | Type | Format | Used In |
+|---------|------|--------|---------|
+| `HiFi_collection` | Dataset Collection (list of 3) | `fasta` | Steps 2, 3, 4, 5 |
+| `Hi-C_dataset_F` | Single dataset | `fastqsanger.gz` | Step 7 (Hi-C scaffolding) |
+| `Hi-C_dataset_R` | Single dataset | `fastqsanger.gz` | Step 7 (Hi-C scaffolding) |
 
 ---
 
