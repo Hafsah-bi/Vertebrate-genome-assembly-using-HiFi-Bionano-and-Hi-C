@@ -1,2 +1,428 @@
 # Vertebrate-genome-assembly-using-HiFi-Bionano-and-Hi-C
 De novo vertebrate genome assembly using PacBio HiFi, Bionano optical maps, and Hi-C data following the VGP-Galaxy pipeline — includes k-mer profiling, hifiasm assembly, purging, and chromosome-level scaffolding.
+
+> A step-by-step implementation of the [VGP Galaxy Tutorial](https://training.galaxyproject.org/training-material/topics/assembly/tutorials/vgp_genome_assembly/tutorial.html) for high-quality vertebrate genome assembly.
+
+---
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Background](#background)
+- [Requirements](#requirements)
+- [Dataset](#dataset)
+- [Pipeline Overview](#pipeline-overview)
+- [Step-by-Step Workflow](#step-by-step-workflow)
+  - [Step 1: Data Preparation](#step-1-data-preparation)
+  - [Step 2: HiFi Reads Preprocessing](#step-2-hifi-reads-preprocessing)
+  - [Step 3: Genome Profile Analysis](#step-3-genome-profile-analysis)
+  - [Step 4: Assembly with hifiasm](#step-4-assembly-with-hifiasm)
+  - [Step 5: Purging False Duplications](#step-5-purging-false-duplications)
+  - [Step 6: Scaffolding with Bionano](#step-6-scaffolding-with-bionano)
+  - [Step 7: Hi-C Scaffolding](#step-7-hi-c-scaffolding)
+  - [Step 8: Assembly Evaluation](#step-8-assembly-evaluation)
+- [Tools Used](#tools-used)
+- [Key Terminology](#key-terminology)
+- [Results](#results)
+- [References](#references)
+- [Acknowledgements](#acknowledgements)
+
+---
+
+## Overview
+
+This repository documents the completion of the **Vertebrate Genome Project (VGP) genome assembly tutorial** from the Galaxy Training Network (GTN). The goal is to produce a high-quality, near-error-free, chromosome-level, haplotype-phased genome assembly using a combination of:
+
+- **PacBio HiFi** long reads (high accuracy, 10–25 kbp)
+- **Bionano** optical maps (for scaffolding)
+- **Hi-C** chromatin conformation data (for chromosome-level scaffolding)
+
+**Tutorial source:** [GTN VGP Assembly Tutorial](https://training.galaxyproject.org/training-material/topics/assembly/tutorials/vgp_genome_assembly/tutorial.html)  
+**Platform:** [Galaxy Project](https://usegalaxy.org) (UseGalaxy.cz)  
+**Estimated time:** ~5 hours  
+**Difficulty level:** Intermediate
+
+---
+
+## Background
+
+Advances in third-generation sequencing (TGS), particularly PacBio HiFi technology, have transformed *de novo* genome assembly. HiFi reads combine:
+- Long read lengths (~10–25 kbp)
+- High accuracy (>Q20, ≥99%)
+- No amplification bias
+
+The **Vertebrate Genomes Project (VGP)**, launched by the Genome 10K (G10K) consortium, aims to generate reference-quality genome assemblies for every vertebrate species. This tutorial follows the VGP assembly pipeline, addressing two major challenges in vertebrate genome assembly:
+
+1. **Repetitive content** — transposable elements and tandem repeats that complicate reconstruction
+2. **Heterozygosity** — haplotype phasing required for diploid genomes
+
+---
+
+## Requirements
+
+### Prerequisites
+
+Before starting, you should be familiar with:
+- [Introduction to Galaxy Analyses](https://training.galaxyproject.org/training-material/topics/introduction)
+- Basic concepts of genome assembly and sequencing
+- [Quality Control in sequencing data](https://training.galaxyproject.org/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html)
+
+### Galaxy Account
+
+A Galaxy account is required. This tutorial was run on:
+- **Instance:** [UseGalaxy.cz](https://usegalaxy.cz/)
+
+### Recommended Sequencing Coverage
+
+| Data Type | Minimum Coverage |
+|-----------|-----------------|
+| PacBio HiFi | 30× (up to 60× for repetitive regions) |
+| Hi-C | ~60× |
+
+---
+
+## Dataset
+
+All datasets used in this tutorial are publicly available on Zenodo:
+
+📦 **Zenodo:** [https://zenodo.org/record/5887339](https://zenodo.org/record/5887339)
+
+| File Type | Description |
+|-----------|-------------|
+| `.fasta` | Reference/genome FASTA files |
+| `.fastq.gz` | Compressed HiFi read files |
+| Bionano `.cmap` | Optical map data |
+| Hi-C `.fastq.gz` | Hi-C paired-end reads |
+
+---
+
+## Pipeline Overview
+
+The VGP pipeline is modular, consisting of up to 10 workflows. This tutorial follows **Analysis Trajectory D** (HiFi + Hi-C + BioNano):
+
+```
+Input Data
+    │
+    ▼
+[WF1] K-mer Profiling (Meryl)
+    │
+    ▼
+[WF3/4] Contig Assembly (hifiasm — HiFi-only or Hi-C phased)
+    │
+    ▼
+[WF6] Purging False Duplications (purge_dups)  ← Optional
+    │
+    ▼
+[WF7] Bionano Scaffolding (Bionano Solve)
+    │
+    ▼
+[WF8] Hi-C Scaffolding (YaHS)
+    │
+    ▼
+[WF9] Decontamination
+    │
+    ▼
+Final Chromosome-Level Assembly
+```
+
+| Input Combination | Analysis Trajectory |
+|-------------------|-------------------|
+| HiFi only | A |
+| HiFi + Hi-C | B |
+| HiFi + BioNano | C |
+| **HiFi + Hi-C + BioNano** | **D (this tutorial)** |
+| HiFi + parental data | E |
+| HiFi + parental + Hi-C | F |
+| HiFi + parental + BioNano | G |
+| HiFi + parental + Hi-C + BioNano | H |
+
+---
+
+## Step-by-Step Workflow
+
+### Step 1: Data Preparation
+
+**Objective:** Upload and organize all input data in Galaxy.
+
+1. Log into [UseGalaxy.cz](https://usegalaxy.cz/)
+2. Create a new History and name it (e.g., `VGP Assembly`)
+3. Upload FASTA datasets from Zenodo:
+   - Use **Upload Data > Paste/Fetch Data**
+   - Paste Zenodo URLs for `.fasta` files
+   - Set datatype to `fasta`
+4. Upload FASTQ datasets:
+   - Set datatype to `fastqsanger.gz`
+5. Organize datasets into **Collections** (Dataset Lists) for easier management
+
+---
+
+### Step 2: HiFi Reads Preprocessing
+
+**Tool:** `Cutadapt`  
+**Objective:** Remove adapter sequences from HiFi reads.
+
+| Parameter | Value |
+|-----------|-------|
+| Input reads | HiFi FASTQ files |
+| Adapter type | 3' adapter |
+| Adapter sequence | PacBio HiFi adapter |
+| Minimum length | 50 |
+
+**Why:** Raw HiFi reads may contain residual adapter sequences that can interfere with assembly.
+
+---
+
+### Step 3: Genome Profile Analysis
+
+#### 3a. K-mer Counting with Meryl
+
+**Tool:** `Meryl`  
+**Objective:** Generate k-mer frequency profiles from HiFi reads.
+
+| Parameter | Value |
+|-----------|-------|
+| k-mer size | 21 |
+| Operation | count |
+| Input | Preprocessed HiFi reads |
+
+#### 3b. Genome Profiling with GenomeScope2
+
+**Tool:** `GenomeScope2`  
+**Objective:** Estimate genome size, heterozygosity, and repetitiveness from the k-mer spectrum.
+
+**Key outputs:**
+- Estimated genome size (Mb/Gb)
+- Heterozygosity rate (%)
+- Repeat content (%)
+- Ploidy
+
+> **Note:** These estimates inform downstream parameters for hifiasm and purge_dups.
+
+---
+
+### Step 4: Assembly with hifiasm
+
+**Tool:** `hifiasm`  
+**Objective:** Assemble contigs from HiFi reads (with optional Hi-C phasing).
+
+#### Assembly Modes
+
+| Mode | Input | Output |
+|------|-------|--------|
+| HiFi-only | HiFi reads | Primary + Alternate assembly |
+| Hi-C phased | HiFi + Hi-C reads | Hap1 + Hap2 assemblies |
+| Pseudohaplotype | HiFi reads | Primary + Alternate (with purging) |
+
+#### Recommended Settings (Hi-C phased mode)
+
+| Parameter | Value |
+|-----------|-------|
+| Input HiFi reads | Preprocessed `.fastq.gz` |
+| Hi-C R1 reads | Hi-C forward reads |
+| Hi-C R2 reads | Hi-C reverse reads |
+| Assembly mode | Hi-C phased |
+
+**Outputs (GFA format → converted to FASTA):**
+- `hap1.p_ctg.fa` — Haplotype 1 contigs
+- `hap2.p_ctg.fa` — Haplotype 2 contigs
+
+#### Assembly QC
+
+**Tool:** `Merqury`  
+Evaluates assembly completeness and accuracy using k-mers.
+
+**Tool:** `BUSCO`  
+Checks completeness against conserved single-copy orthologs.
+
+**Tool:** `gfastats`  
+Reports assembly statistics (N50, L50, contig count, total size).
+
+---
+
+### Step 5: Purging False Duplications
+
+**Tool:** `purge_dups`  
+**Objective:** Remove haplotypic duplications and overlaps from the primary assembly.
+
+> **When to purge:** Inspect k-mer multiplicity plots from Merqury. If the primary assembly shows a bimodal distribution with a second peak at 2× coverage, purging is recommended.
+
+**Steps:**
+1. Align HiFi reads back to the primary assembly (`minimap2`)
+2. Calculate read depth (`purge_dups: calcuts`)
+3. Split assemblies at coverage gaps (`split_fa`)
+4. Self-align contigs to detect overlaps (`minimap2 -x asm5`)
+5. Purge duplications (`purge_dups`)
+
+**Outputs:**
+- `purged.fa` — Purged primary assembly
+- `hap.fa` — Haplotigs moved to alternate
+
+---
+
+### Step 6: Scaffolding with Bionano
+
+**Tool:** `Bionano Solve`  
+**Objective:** Use optical maps to scaffold contigs into larger sequences.
+
+**How it works:** Bionano optical maps provide long-range physical distance information (~1 Mb) by labeling specific enzyme recognition sites in high-molecular-weight DNA.
+
+| Parameter | Value |
+|-----------|-------|
+| Assembly FASTA | Purged primary assembly |
+| Bionano CMAP | Optical map file |
+| Enzyme | DLE-1 (or appropriate enzyme) |
+
+**Outputs:**
+- Hybrid scaffolds (FASTA)
+- Scaffolding statistics
+- Conflict reports
+
+**QC:** Compare N50, scaffold count, and total size before and after Bionano scaffolding.
+
+---
+
+### Step 7: Hi-C Scaffolding
+
+**Tool:** `YaHS`  
+**Objective:** Use Hi-C chromatin contact data to order and orient scaffolds into chromosome-level assemblies.
+
+#### Pre-processing Hi-C Data
+
+1. **Trim adapters** using `Trim Galore`
+2. **Map reads** to assembly using `BWA-MEM2`:
+   - Map R1 and R2 independently
+   - Filter for high-quality alignments
+3. **Filter and sort** BAM files
+4. **Mark duplicates** using `Picard MarkDuplicates`
+
+#### YaHS Scaffolding
+
+| Parameter | Value |
+|-----------|-------|
+| Input assembly | Bionano-scaffolded FASTA |
+| Hi-C BAM | Filtered, deduplicated BAM |
+| Restriction enzyme | Arima (or HindIII/DpnII) |
+
+#### Generate Hi-C Contact Maps
+
+**Tool:** `PretextMap` → `PretextSnapshot`  
+Visualize genome-wide Hi-C contact maps to assess scaffolding quality.
+
+**Good scaffolding signs:**
+- Clear diagonal blocks (chromosomes)
+- Strong intra-chromosomal signal
+- Minimal off-diagonal noise
+
+---
+
+### Step 8: Assembly Evaluation
+
+**Objective:** Comprehensively assess the quality of the final assembly.
+
+| Tool | Metric |
+|------|--------|
+| `gfastats` | N50, L50, contig/scaffold count, total length |
+| `BUSCO` | Gene space completeness (%) |
+| `Merqury` | k-mer completeness, QV score |
+| `PretextMap` | Hi-C contact map visualization |
+| `BlobTools` | Contamination screening |
+
+#### Key Quality Metrics
+
+| Metric | Description | Good Assembly Target |
+|--------|-------------|---------------------|
+| N50 | Length at which 50% of assembly is in contigs ≥ this length | Chromosome-scale |
+| BUSCO completeness | % conserved genes found intact | > 95% |
+| QV (Quality Value) | Phred-scaled error rate estimate | > Q40 |
+| k-mer completeness | % of k-mers from reads found in assembly | > 95% |
+
+---
+
+## Tools Used
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| [Cutadapt](https://cutadapt.readthedocs.io/) | Latest | Adapter trimming |
+| [Meryl](https://github.com/marbl/meryl) | Latest | K-mer counting |
+| [GenomeScope2](https://github.com/tbenavi1/genomescope2.0) | Latest | Genome profiling |
+| [hifiasm](https://github.com/chhylp123/hifiasm) | Latest | HiFi contig assembly |
+| [purge_dups](https://github.com/dfguan/purge_dups) | Latest | Duplicate purging |
+| [Bionano Solve](https://bionano.com/software-downloads/) | Latest | Optical map scaffolding |
+| [YaHS](https://github.com/c-zhou/yahs) | Latest | Hi-C scaffolding |
+| [BWA-MEM2](https://github.com/bwa-mem2/bwa-mem2) | Latest | Hi-C read mapping |
+| [BUSCO](https://busco.ezlab.org/) | Latest | Assembly completeness |
+| [Merqury](https://github.com/marbl/merqury) | Latest | Reference-free QC |
+| [PretextMap](https://github.com/wtsi-hpag/PretextMap) | Latest | Hi-C contact maps |
+| [gfastats](https://github.com/vgl-hub/gfastats) | Latest | Assembly statistics |
+
+---
+
+## Key Terminology
+
+| Term | Definition |
+|------|-----------|
+| **Contig** | A contiguous, gapless sequence assembled from reads |
+| **Scaffold** | One or more contigs joined by gap (N) sequences using additional data |
+| **N50** | The length at which 50% of the total assembly is contained in contigs of this size or larger |
+| **Haplotype** | A set of DNA variations inherited together from one parent |
+| **Heterozygosity** | Having two different alleles at a locus |
+| **Pseudohaplotype assembly** | An assembly with long phased blocks separated by unresolved regions |
+| **Primary assembly** | The more complete haplotype representation (includes homo- and heterozygous regions) |
+| **Alternate assembly** | Contains alternate alleles not in the primary assembly |
+| **Haplotypic duplication** | False duplication where both alleles of a heterozygous region are in the same assembly |
+| **Purging** | Removal of false duplications and low-coverage regions from assembly |
+| **HiFi reads** | PacBio high-fidelity reads: long (10–25 kbp) and highly accurate (>Q20) |
+| **K-mer** | A nucleotide subsequence of length k |
+| **BUSCO** | Benchmarking Universal Single-Copy Orthologs — a gene completeness metric |
+| **T2T** | Telomere-to-Telomere — a complete, gap-free chromosome assembly |
+
+---
+
+## Results
+
+> ⚠️ *Fill in this section after completing the tutorial with your actual results.*
+
+### Genome Profile (GenomeScope2)
+
+| Metric | Value |
+|--------|-------|
+| Estimated genome size | ___ Mb |
+| Heterozygosity | ___% |
+| Repeat content | ___% |
+| Ploidy | ___ |
+
+### Assembly Statistics
+
+| Stage | Contigs/Scaffolds | N50 | Total Size | BUSCO (%) |
+|-------|------------------|-----|-----------|-----------|
+| hifiasm (raw) | | | | |
+| After purge_dups | | | | |
+| After Bionano scaffolding | | | | |
+| After Hi-C scaffolding | | | | |
+
+### Hi-C Contact Map
+
+> *(Insert PretextSnapshot image here)*
+
+---
+
+## References
+
+1. Rhie, A. et al. (2021). Towards complete and error-free genome assemblies of all vertebrate species. *Nature*, 592, 737–746.
+2. Cheng, H. et al. (2021). Haplotype-resolved de novo assembly using phased assembly graphs with hifiasm. *Nature Methods*, 18, 170–175.
+3. Guan, D. et al. (2020). Identifying and removing haplotypic duplication in primary genome assemblies. *Bioinformatics*, 36(9), 2896–2898.
+4. Zhou, C. et al. (2023). YaHS: yet another Hi-C scaffolding tool. *Bioinformatics*, 39(1).
+5. Wenger, A.M. et al. (2019). Accurate circular consensus long-read sequencing improves variant detection and assembly of a human genome. *Nature Biotechnology*, 37, 1155–1162.
+6. Rhie, A. et al. (2020). Merqury: reference-free quality, completeness, and phasing assessment for genome assemblies. *Genome Biology*, 21, 245.
+
+---
+
+## Acknowledgements
+
+This tutorial was developed by the **Galaxy Training Network (GTN)** and the **Vertebrate Genomes Project (VGP)** team. Original tutorial authors include Alex Ostrovsky, Cristóbal Gallardo, Anna Syme, Linelle Abueg, Brandon Pickett, Giulio Formenti, Marcella Sozzoni, and Anton Nekrutenko.
+
+Tutorial license: [Creative Commons Attribution 4.0 International](http://creativecommons.org/licenses/by/4.0/)
+
+---
+
+*This repository was created as part of a bioinformatics assignment to reproduce and document the VGP genome assembly pipeline using the Galaxy platform.*
