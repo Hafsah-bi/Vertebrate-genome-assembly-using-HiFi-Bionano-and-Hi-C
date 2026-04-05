@@ -38,7 +38,7 @@ This repository documents the completion of the **Vertebrate Genome Project (VGP
 - **Hi-C** chromatin conformation data (for chromosome-level scaffolding)
 
 **Tutorial source:** [GTN VGP Assembly Tutorial](https://training.galaxyproject.org/training-material/topics/assembly/tutorials/vgp_genome_assembly/tutorial.html)  
-**Platform:** [Galaxy Project](https://usegalaxy.org) (UseGalaxy.cz)  
+**Platform:** [Galaxy Project](https://usegalaxy.org) (UseGalaxy.org)  
 **Estimated time:** ~5 hours  
 **Difficulty level:** Intermediate
 
@@ -70,7 +70,7 @@ Before starting, you should be familiar with:
 ### Galaxy Account
 
 A Galaxy account is required. This tutorial was run on:
-- **Instance:** [UseGalaxy.cz](https://usegalaxy.cz/)
+- **Instance:** [UseGalaxy.org](https://usegalaxy.org/)
 
 ### Recommended Sequencing Coverage
 
@@ -194,7 +194,7 @@ All files are publicly available on Zenodo. Upload the following directly into G
 
 ### Step 2: HiFi Reads Preprocessing
  
-**Tool:** `Cutadapt` (Galaxy version `4.4+galaxy0`)  
+**Tool:** `Cutadapt`
 **Objective:** Remove PacBio HiFi adapter sequences from reads. Reads that contain adapters are discarded entirely, as their presence indicates chimeric or incomplete reads that would degrade assembly quality.
  
 #### Input
@@ -227,7 +227,7 @@ Two custom adapters are provided. Using the **Anywhere** mode allows Cutadapt to
  
 | Parameter | Value |
 |-----------|-------|
-| Discard Trimmed Reads | `Yes` ✅ |
+| Discard Trimmed Reads | `Yes` |
  
 > **Why discard instead of trim?** In HiFi sequencing, the presence of an adapter mid-read indicates the read is a chimera (two molecules ligated together). Such reads are unreliable and should be removed entirely rather than trimmed, as even the retained portion may be erroneous.
  
@@ -237,32 +237,106 @@ Two custom adapters are provided. Using the **Anywhere** mode allows Cutadapt to
 - Reads containing either adapter sequence are completely discarded.
  
 ---
-
 ### Step 3: Genome Profile Analysis
 
-#### 3a. K-mer Counting with Meryl
+**Objective:** Estimate genome size, heterozygosity, and repeat content from k-mer
+frequencies in raw HiFi reads before assembly.
 
-**Tool:** `Meryl`  
-**Objective:** Generate k-mer frequency profiles from HiFi reads.
+Before assembly, it is useful to collect metrics on genome properties such as expected
+genome size. Modern approaches use **k-mer frequency analysis** instead of experimental
+methods like DNA flow cytometry. This provides information on genomic complexity and
+data quality.
+
+The workflow has three stages:
+1. Count k-mers per file with **Meryl** (parallelized over the collection)
+2. Merge per-file counts into one database with **Meryl**
+3. Fit a model to the merged histogram with **GenomeScope2**
+
+---
+
+#### 3a. K-mer Counting with Meryl (Count)
+
+**Tool:** `Meryl` 
+
+Meryl decomposes reads into k-length substrings and counts each k-mer's frequency.
+Since HiFi data is stored as a collection, a separate `count` job runs for each FASTA
+file automatically, parallelizing the work.
 
 | Parameter | Value |
 |-----------|-------|
-| k-mer size | 21 |
-| Operation | count |
-| Input | Preprocessed HiFi reads |
+| Operation type selector | `Count operations` |
+| Count operations | `Count: count the occurrences of canonical k-mers` |
+| Input sequences | `HiFi_collection (trim)` *(Dataset Collection)* |
+| k-mer size selector | `Set a k-mer size` |
+| k-mer size | `31` |
 
-#### 3b. Genome Profiling with GenomeScope2
+> **Why k = 31?** Long enough that most k-mers are non-repetitive, short enough to
+> tolerate sequencing errors. For genomes > 10 Gb or highly repetitive genomes, use
+> a larger k.
 
-**Tool:** `GenomeScope2`  
-**Objective:** Estimate genome size, heterozygosity, and repetitiveness from the k-mer spectrum.
+**➜ Rename output:** `meryldb`
 
-**Key outputs:**
-- Estimated genome size (Mb/Gb)
-- Heterozygosity rate (%)
-- Repeat content (%)
-- Ploidy
+---
 
-> **Note:** These estimates inform downstream parameters for hifiasm and purge_dups.
+#### 3b. Merging K-mer Databases with Meryl (Union-Sum)
+
+**Tool:** `Meryl` 
+
+Merges per-file k-mer databases into a single database by summing counts across all files.
+
+| Parameter | Value |
+|-----------|-------|
+| Operation type selector | `Operations on sets of k-mers` |
+| Operations on sets of k-mers | `Union-sum: return k-mers that occur in any input, set the count to the sum of the counts` |
+| Input meryldb | `meryldb` *(collection from previous step)* |
+
+**➜ Rename output:** `Merged meryldb`
+
+---
+
+#### 3c. Generating the K-mer Histogram with Meryl
+
+**Tool:** `Meryl` 
+
+Generates a k-mer frequency histogram from the merged database for input into GenomeScope2.
+
+| Parameter | Value |
+|-----------|-------|
+| Operation type selector | `Generate histogram dataset` |
+| Input meryldb | `Merged meryldb` |
+
+**➜ Rename output:** `meryldb histogram`
+
+---
+
+#### 3d. Genome Profiling with GenomeScope2
+
+**Tool:** `GenomeScope` 
+
+GenomeScope2 fits a mixture of negative binomial distributions to the k-mer histogram
+using nonlinear least-squares optimization, estimating genome size, heterozygosity, and
+repeat content.
+
+| Parameter | Value |
+|-----------|-------|
+| Input histogram file | `meryldb histogram` |
+| Ploidy | `2` |
+| k-mer length | `31` |
+| Output options → Summary | Checked |
+| Advanced options → Create testing.tsv | `Yes` |
+
+---
+
+#### GenomeScope2 Outputs
+
+**Plots:**
+
+| Output | Description |
+|--------|-------------|
+| Linear plot | k-mer frequency vs. coverage |
+| Log plot | Log-scale version of the linear plot |
+| Transformed linear plot | Frequency × coverage vs. coverage (amplifies higher-order peaks) |
+| Transformed log plot | Log-scale version of the transformed plot |
 
 ---
 
