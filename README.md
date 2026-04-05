@@ -597,16 +597,6 @@ The tool automates scaffolding in five steps:
 | Expected genome size | `367145094` |
 | Thousands separator in output | `No` |
 
-| Metric | Before Bionano | After Bionano |
-|--------|---------------|--------------|
-| No. of sequences | *(fill in)* | *(fill in)* |
-| Largest sequence | *(fill in)* | *(fill in)* |
-| Total length | *(fill in)* | *(fill in)* |
-| N50 | *(fill in)* | *(fill in)* |
-| GC content (%) | *(fill in)* | *(fill in)* |
-
-> **What to look for:** N50 should increase and sequence count should decrease,
-> indicating improved contiguity.
 ---
 
 ### Step 6: Hi-C Scaffolding
