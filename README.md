@@ -157,19 +157,49 @@ Final Chromosome-Level Assembly
 ---
 
 ### Step 2: HiFi Reads Preprocessing
-
-**Tool:** `Cutadapt`  
-**Objective:** Remove adapter sequences from HiFi reads.
-
+ 
+**Tool:** `Cutadapt` (Galaxy version `4.4+galaxy0`)  
+**Objective:** Remove PacBio HiFi adapter sequences from reads. Reads that contain adapters are discarded entirely, as their presence indicates chimeric or incomplete reads that would degrade assembly quality.
+ 
+#### Input
+ 
 | Parameter | Value |
 |-----------|-------|
-| Input reads | HiFi FASTQ files |
-| Adapter type | 3' adapter |
-| Adapter sequence | PacBio HiFi adapter |
-| Minimum length | 50 |
-
-**Why:** Raw HiFi reads may contain residual adapter sequences that can interfere with assembly.
-
+| Single-end or Paired-end reads? | `Single-end` |
+| FASTQ/A file | `HiFi_collection` (Dataset Collection) |
+ 
+#### Read 1 Options — 5' or 3' (Anywhere) Adapters
+ 
+Two custom adapters are provided. Using the **Anywhere** mode allows Cutadapt to detect and trim these sequences whether they appear at the 5' or 3' end of a read.
+ 
+| # | Adapter Name | Adapter Sequence |
+|---|-------------|-----------------|
+| 1 | First adapter | `ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT` |
+| 2 | Second adapter | `ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT` |
+ 
+> These are the standard PacBio HiFi SMRTbell adapter sequences. The two adapters are reverse complements of each other.
+ 
+#### Adapter Options
+ 
+| Parameter | Value |
+|-----------|-------|
+| Maximum error rate | `0.1` (10% mismatches allowed during adapter matching) |
+| Minimum overlap length | `35` bp |
+| Look for adapters in the reverse complement | `Yes` |
+ 
+#### Filter Options
+ 
+| Parameter | Value |
+|-----------|-------|
+| Discard Trimmed Reads | `Yes` ✅ |
+ 
+> **Why discard instead of trim?** In HiFi sequencing, the presence of an adapter mid-read indicates the read is a chimera (two molecules ligated together). Such reads are unreliable and should be removed entirely rather than trimmed, as even the retained portion may be erroneous.
+ 
+#### Output
+ 
+- A filtered collection of adapter-free HiFi reads, ready for k-mer profiling and assembly.
+- Reads containing either adapter sequence are completely discarded.
+ 
 ---
 
 ### Step 3: Genome Profile Analysis
