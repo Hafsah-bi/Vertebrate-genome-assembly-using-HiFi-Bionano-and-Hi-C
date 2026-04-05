@@ -114,7 +114,7 @@ Input Data
 [Step 4] Assembly with hifiasm (Hi-C phased)
     │
     ▼
-[Step 5] Bionano Scaffolding (Bionano Solve)
+[Step 5] Bionano Scaffolding (Bionano)
     │
     ▼
 [Step 6] Hi-C Scaffolding (YaHS)
@@ -196,6 +196,7 @@ All files are publicly available on Zenodo. Upload the following directly into G
 ### Step 2: HiFi Reads Preprocessing
  
 **Tool:** `Cutadapt`
+
 **Objective:** Remove PacBio HiFi adapter sequences from reads. Reads that contain adapters are discarded entirely, as their presence indicates chimeric or incomplete reads that would degrade assembly quality.
  
 #### Input
